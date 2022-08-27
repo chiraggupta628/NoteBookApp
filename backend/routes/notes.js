@@ -18,8 +18,9 @@ router.post('/addnote', fetchUser, [
     body('description', 'Description length must be greater than 4').isLength({ min: 5 })
 ], async (req, res) => {
     const errors = validationResult(req);
+    let success = false;
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        return res.status(400).json({ success,errors: errors.array() });
     }
     try {
         const { title, description, tag } = req.body;
@@ -27,14 +28,16 @@ router.post('/addnote', fetchUser, [
             title, description, tag, user: req.user.id
         });
         const savedNote = await note.save();
-        res.json(savedNote);
+        success = true;
+        res.json({success,savedNote});
     } catch (error) {
-        return res.status(400).json({ errors: "Internal server error" });
+        return res.status(400).json({ success,errors: "Internal server error" });
     }
 });
 
 router.put('/updatenote/:id', fetchUser, async (req, res) => {
 
+    let success = false;
     try {
         const { title, description, tag } = req.body;
         const newNote = {};
@@ -55,18 +58,19 @@ router.put('/updatenote/:id', fetchUser, async (req, res) => {
         }
 
         note = await Notes.findByIdAndUpdate(req.params.id, { $set: newNote }, { new: true });
-        res.json({note});
+        success = true;
+        res.json({note,success});
     } catch (error) {
         console.log(error);
-        return res.status(400).json({ errors: "Internal server error" });
+        return res.status(400).json({ success,errors: "Internal server error" });
     }
 
 });
 router.delete('/deletenote/:id', fetchUser, async (req, res) => {
 
+    let success = false;
     try {
         let note = await Notes.findById(req.params.id);
-
         if (!note) {
             return res.status(404).send("Error finding the note");
         }
@@ -76,10 +80,11 @@ router.delete('/deletenote/:id', fetchUser, async (req, res) => {
         }
 
         note = await Notes.findByIdAndDelete(req.params.id);
-        res.json({"Success":"Note has been deleted","note":note});
+        success = true;
+        res.json({success,"note":note});
     } catch (error) {
         console.log(error);
-        return res.status(400).json({ errors: "Internal server error" });
+        return res.status(400).json({ success,errors: "Internal server error" });
     }
 
 });

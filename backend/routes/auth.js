@@ -14,12 +14,13 @@ router.post('/createuser',[
 
 ], async (req,res) => {
    const errors = validationResult(req);
+   let success = false;
    if (!errors.isEmpty()) {
      return res.status(400).json({ errors: errors.array() });
    }
    let user = await User.findOne({email : req.body.email});
    if(user){
-      return res.status(400).json({error :"User already exist."});
+      return res.status(400).json({success,error :"User already exist."});
    }
    const password_hash = bcrypt.hashSync(req.body.password, 10);
    user= await User.create({
@@ -32,9 +33,9 @@ router.post('/createuser',[
          id : user._id
       }
     }
-    const authToken = jwt.sign(data,PRIVATE_JWT_KEY);
-
-    res.json({"authToken":authToken});
+   
+    success = true;
+    res.json({success});
 
 });
 router.post('/login',[
@@ -42,19 +43,27 @@ router.post('/login',[
    body('password',"Password cannot be empty").not().isEmpty().trim().escape()
 ], async (req,res) => {
    const errors = validationResult(req);
+   let success = false;
    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ success,errors: errors.array() });
     }
    try {
    let user = await User.findOne({email : req.body.email});
    if(!user){
-      return res.status(400).json({ errors: "Invalid Credentials"});
+      return res.status(400).json({ success,errors: "Invalid Credentials"});
    }
    const password_match = await bcrypt.compare(req.body.password,user.password);
    if(!password_match){
-      return res.status(400).json({ errors: "Invalid Credentials"});
+      return res.status(400).json({ success,errors: "Invalid Credentials"});
    }
-   res.json(user)
+   const data = {
+      user :{
+         id : user._id
+      }
+    }
+    const authToken = jwt.sign(data,PRIVATE_JWT_KEY);
+    success = true;
+    res.json({success,"authToken":authToken});
 
    } catch (error) {
       console.log("Internal server error")
